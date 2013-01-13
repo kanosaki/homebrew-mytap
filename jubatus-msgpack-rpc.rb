@@ -1,17 +1,23 @@
 require 'formula'
 
-class Pficommon < Formula
-  # url 'https://github.com/pfi/pficommon/tarball/1.3.1.0'
-  head 'https://github.com/pfi/pficommon.git'
+class JubatusMsgpackRpc < Formula
+  url 'https://github.com/jubatus/jubatus-msgpack-rpc/tarball/0.4.0'
+  head 'https://github.com/jubatus/jubatus-msgpack-rpc.git'
   homepage 'http://pfi.github.com/pficommon/'
-  # md5 'cc3cabc99c646d1a952efe2e563dfdc9'
+  md5 'ab4aaac7f8e6d1fd6ca1171612420228'
 
   depends_on 'msgpack'
+  depends_on 'jubatus-mpio'
+  depends_on 'libtool'
+  depends_on 'automake'
 
   def install
-    system "./configure", "--prefix=#{prefix}"
-    system "make"
-    system "make", "install"
+    cd "cpp" do
+      system "./bootstrap"
+      system "./configure", "--prefix=#{prefix}"
+      system "make"
+      system "make", "install"
+    end
   end
 
   def test

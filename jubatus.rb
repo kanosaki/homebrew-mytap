@@ -1,35 +1,68 @@
 require 'formula'
 
+class ZooKeeperLib < Requirement
+  def initialize
+    @zk = Formula.factory('zookeeper')
+  end
+
+  def fatal?
+    true
+  end
+
+  def satisfied?
+    @zk.installed? and File.exist?(@zk.lib + 'libzookeeper_mt.dylib')
+  end
+
+  def message
+    if @zk.installed?
+      <<-EOS.undent
+        ZooKeeper build was requested, but Zookeeper was already built without `--c` option.
+        You will need to `brew uninstall zookeeper; brew install zookeeper --c` first.
+      EOS
+    else
+      <<-EOS.undent
+        ZooKeeper build was requested, but Zookeeper is not installed.
+        You will need to `brew install zookeeper --c` first.
+      EOS
+    end
+  end
+end
+
 class Jubatus < Formula
-  head 'git://github.com/jubatus/jubatus.git'
+  url 'https://github.com/jubatus/jubatus/tarball/0.4.0'
+  head 'https://github.com/jubatus/jubatus.git'
   homepage 'http://jubat.us/'
-  md5 '79b6cf2ee5fc7f733fcd6f5cc5f7ec62'
+  md5 'e85e4117d76daf81d09013dc724792c5'
+
+  option 'enable-zookeeper', 'Using zookeeper for distributed environemnt'
 
   depends_on 'glog'
+  depends_on 'mecab' unless ARGV.include? "--disable-mecab"
   depends_on 'pkg-config'
   depends_on 'pficommon'
-  depends_on 'jubatus-mpio'
+  depends_on 'jubatus-mspgack-rpc'
+  depends_on 're2' unless ARGV.include? "--disable-re2"
+
+  if build.include? 'enable-zookeeper'
+    depends_on ZooKeeperLib.new
+  end
 
   def options
     [
-     [ '--disable-zookeeper', 'if not nessesary' ],
-     [ '--disable-re2', 'if not nessesary'],
-     [ '--enable-mecab', 'if nesseary' ]
+     [ '--disable-mecab', 'if not nesseary' ],
+     [ '--disable-re2', 'if not nessesary']
     ]
   end
 
   def install
     args = []
-    args << "--disable-zookeeper" if ARGV.include? "--disable-zookeeper"
+    args << "--prefix=#{prefix}"
     args << "--disable-re2" if ARGV.include? "--disable-re2"
-    system "./waf", "configure", "--prefix=#{prefix}", *args
+    args << "--enable-mecab" unless ARGV.include? "--disable-mecab"
+    system "./waf", "configure", *args
     system "./waf", "build"
     system "./waf", "install"
   end
-
-#  def patches
-#    {:p0 => "https://raw.github.com/gist/1344700/8abcfec9fb3344954da89386b6d03683c7ccee8c/wscript.diff"}
-#  end
 
   def test
     # This test will fail and we won't accept that! It's enough to just
